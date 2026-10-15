@@ -6,6 +6,6 @@
  * NUNCA pegues aquí una clave sb_secret_... ni una clave service_role.
  */
 window.APP_CONFIG = Object.freeze({
-  SUPABASE_URL: "https://TU-PROYECTO.supabase.co",
-  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_REEMPLAZAR"
+  SUPABASE_URL: "https://ijqcngkfsneezazezlfg.supabase.co/rest/v1/",
+  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_WLYqc_vT9a7zn07J09SGDA_kA1mISom"
 });
