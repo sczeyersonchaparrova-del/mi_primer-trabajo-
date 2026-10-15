@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#10111b" />
+  <meta name="description" content="Mi agenda ágil: organiza tus tareas en un tablero Kanban y accede desde cualquier dispositivo con Supabase." />
+  <title>Mi agenda ágil · Kanban</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #10111b;
+      --panel: #1b1d2c;
+      --panel-2: #222435;
+      --line: #35374a;
+      --muted: #a5a8bc;
+      --text: #f8f8fd;
+      --purple: #ab9bff;
+      --lavender: #e1dcff;
+      --mint: #a9f0c8;
+      --blue: #89c7ff;
+      --yellow: #ffce85;
+      --red: #ffa4ae;
+      --radius: 18px;
+      --shadow: 0 18px 60px rgba(0, 0, 0, .22);
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; }
+    body { min-height: 100vh; margin: 0; background: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { opacity: .58; cursor: not-allowed; }
+    :focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
+    [hidden] { display: none !important; }
+    .page-glow { position: fixed; z-index: -1; pointer-events: none; inset: 0; background: radial-gradient(circle at 15% 5%, rgba(138,100,253,.18),transparent 28%), radial-gradient(circle at 91% 82%,rgba(60,163,141,.11),transparent 32%); }
+    .wrap { width: min(1220px, calc(100% - 48px)); margin: 0 auto; }
+    .site-header { min-height: 94px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    .brand { display: inline-flex; gap: 12px; align-items: center; white-space: nowrap; font-weight: 800; font-size: 19px; letter-spacing: -.7px; }
+    .brand-mark { display: grid; place-items: center; height: 43px; width: 43px; background: linear-gradient(145deg,#b4a7ff,#7960ec); border-radius: 14px; color: #11111b; box-shadow: 0 10px 28px #8a68ff29; }
+    .brand-mark svg { width: 25px; height: 25px; }
+    .user-bar { display: flex; gap: 12px; align-items: center; min-width: 0; }
+    .user-email { font-size: 13px; color: var(--muted); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 260px; }
+    .ghost-btn, .subtle-btn { display: inline-flex; gap: 7px; align-items: center; justify-content: center; color: var(--text); border: 1px solid var(--line); background: rgba(255,255,255,.025); padding: 10px 14px; border-radius: 11px; font-size: 13px; font-weight: 700; transition: background .2s, border-color .2s; }
+    .ghost-btn:hover, .subtle-btn:hover { background: #303247; border-color: #616482; }
+    .primary-btn { border: 0; background: var(--purple); color: #181427; font-weight: 800; border-radius: 12px; padding: 13px 18px; transition: transform .18s, background .18s; }
+    .primary-btn:hover:not(:disabled) { background: #c2b7ff; transform: translateY(-1px); }
+    .section-kicker { display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; font-weight: 800; color: var(--mint); }
+    .section-kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 15px currentColor; }
+    h1,h2,h3,p { margin-top: 0; }
+    h1 { font-size: clamp(35px, 4.6vw, 59px); line-height: 1.1; letter-spacing: -2.6px; margin-bottom: 14px; }
+    h2 { font-size: 19px; letter-spacing: -.5px; margin-bottom: 7px; }
+    .text-muted { color: var(--muted); }
+    .auth-shell { min-height: calc(100vh - 94px); display: grid; grid-template-columns: 1.12fr .88fr; gap: 7%; align-items: center; padding-top: 60px; padding-bottom: 80px; }
+    .intro-copy { max-width: 600px; }
+    .intro-copy h1 { margin-top: 20px; }
+    .intro-copy h1 span { color: var(--purple); }
+    .intro-copy > p { font-size: 17px; line-height: 1.8; max-width: 480px; }
+    .features { display: grid; gap: 17px; margin-top: 32px; }
+    .feature { display: flex; gap: 13px; align-items: flex-start; color: #d3d4e2; font-size: 14px; }
+    .feature-icon { width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; display: grid; place-items: center; color: var(--mint); background: #a9f0c81a; font-size: 18px; }
+    .feature strong { display: block; margin-bottom: 3px; font-size: 14px; color: white; }
+    .feature small { display: block; color: var(--muted); line-height: 1.5; font-size: 13px; }
+    .auth-card { background: #1d1f2d; padding: clamp(26px, 3.5vw, 40px); border: 1px solid #39394c; border-radius: 24px; box-shadow: var(--shadow); }
+    .auth-card-heading { margin-bottom: 22px; }
+    .auth-card-heading h2 { font-size: 25px; letter-spacing: -.8px; }
+    .auth-card-heading p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 4px; background: #12131e; border-radius: 12px; margin-bottom: 25px; }
+    .tab { padding: 10px; border-radius: 9px; border: 0; background: transparent; color: var(--muted); font-weight: 750; font-size: 14px; }
+    .tab[aria-selected="true"] { background: #33344c; color: white; }
+    .field { display: grid; gap: 8px; margin-bottom: 18px; }
+    .field label { font-size: 13px; font-weight: 750; color: #e1e1ea; }
+    .field input, .field select { display: block; width: 100%; border: 1px solid #45465a; border-radius: 11px; padding: 13px 14px; color: white; background: #151622; outline: none; }
+    .field input:focus, .field select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #ab9bff22; }
+    .field input::placeholder { color: #787b91; }
+    .full { width: 100%; }
+    .auth-note { margin: 17px 0 0; text-align: center; color: #999bb2; font-size: 12px; line-height: 1.7; }
+    .notice { padding: 12px 14px; border-radius: 11px; font-size: 13px; line-height: 1.6; margin-bottom: 18px; border: 1px solid #606182; background: #3a3b54; color: #f1efff; }
+    .notice.error { background: #542b3a; border-color: #914f5f; color: #ffd9dd; }
+    .notice.success { background: #23463f; border-color: #376f61; color: #ccffde; }
+    .workspace { padding: 48px 0 70px; }
+    .workspace-head { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; }
+    .workspace-head h1 { font-size: clamp(34px, 4.5vw, 52px); margin: 12px 0 9px; }
+    .workspace-head p { margin: 0; color: var(--muted); font-size: 14px; }
+    .workspace-actions { display: flex; gap: 10px; padding-bottom: 6px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin: 24px 0; }
+    .stat { background: #1b1c2b; padding: 20px 22px; border: 1px solid #323347; border-radius: var(--radius); }
+    .stat-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 700; }
+    .stat-icon { height: 30px; width: 30px; display: grid; place-items: center; border-radius: 9px; background: #ab9bff22; color: var(--purple); }
+    .stat-value { font-size: 32px; line-height: 1.25; letter-spacing: -1.1px; font-weight: 850; margin-top: 8px; }
+    .stat-foot { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .progress-track { margin-top: 10px; background: #34364a; border-radius: 8px; height: 7px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0%; border-radius: 8px; background: linear-gradient(90deg,#7eddb1,#c5f7d7); transition: width .3s; }
+    .add-panel { border-radius: var(--radius); padding: 20px 22px; background: #202133; border: 1px solid #38394f; margin-bottom: 29px; }
+    .add-panel-head { margin-bottom: 15px; display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+    .add-panel-head h2 { margin: 0 0 5px; font-size: 17px; }
+    .add-panel-head p { margin: 0; color: var(--muted); font-size: 12px; }
+    .add-form { display: grid; grid-template-columns: minmax(0, 1fr) 160px 140px; gap: 12px; }
+    .add-form input, .add-form select { width: 100%; padding: 13px 15px; background: #151624; border-radius: 10px; border: 1px solid #46475c; color: #fff; }
+    .add-form input::placeholder { color: #999bab; }
+    .add-form input:focus, .add-form select:focus { outline: 2px solid var(--purple); outline-offset: 1px; }
+    .board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+    .column { background: #1b1c2b; border: 1px solid #343649; border-radius: 18px; min-height: 340px; overflow: hidden; transition: background .2s, border-color .2s; }
+    .column.drag-over { background: #2c2949; border-color: #b9a9ff; }
+    .column-head { padding: 20px 18px 15px; border-bottom: 1px solid #303146; }
+    .col-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .col-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; letter-spacing: -.2px; }
+    .col-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--purple); box-shadow: 0 0 12px #ab9bff55; }
+    .column[data-status="haciendo"] .col-dot { background: var(--blue); box-shadow: 0 0 12px #89c7ff55; }
+    .column[data-status="realizadas"] .col-dot { background: var(--mint); box-shadow: 0 0 12px #a9f0c855; }
+    .count { color: #bcbdd4; background: #36374b; min-width: 27px; height: 27px; padding: 0 6px; display: grid; place-items: center; border-radius: 9px; font-size: 12px; font-weight: 850; }
+    .col-desc { margin: 7px 0 0 21px; font-size: 12px; color: var(--muted); }
+    .task-list { padding: 13px; display: grid; gap: 12px; min-height: 220px; align-content: start; }
+    .task-card { background: #282a3c; padding: 16px; border-radius: 13px; border: 1px solid #3f4055; box-shadow: 0 9px 25px #00000012; cursor: grab; }
+    .task-card:active { cursor: grabbing; }
+    .task-card.is-dragging { opacity: .5; }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 9px; margin-bottom: 12px; }
+    .priority { display: inline-flex; gap: 5px; align-items: center; font-size: 11px; font-weight: 800; border-radius: 100px; padding: 5px 9px; }
+    .priority::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .priority.alta { color: #ffc0bd; background: #a1464937; }
+    .priority.media { color: #ffd79e; background: #ae7b383b; }
+    .priority.baja { color: #afe7c6; background: #3b886840; }
+    .delete-btn { display: inline-grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; border: 0; background: transparent; color: #a6a7bb; border-radius: 8px; font-size: 17px; }
+    .delete-btn:hover { background: #633947; color: #ffbfc7; }
+    .task-title { color: white; font-size: 14px; font-weight: 700; line-height: 1.55; margin: 0 0 17px; overflow-wrap: anywhere; }
+    .task-footer { border-top: 1px solid #3b3c51; padding-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .task-date { font-size: 11px; color: #a4a6b8; white-space: nowrap; }
+    .card-controls { display: inline-flex; align-items: center; gap: 6px; }
+    .move-btn { background: #3b3c51; border: 1px solid #52536b; border-radius: 7px; color: #eeedfb; min-height: 29px; min-width: 29px; padding: 0 7px; font-weight: 800; }
+    .move-btn:hover { background: #555576; }
+    .empty { text-align: center; color: #9e9fb4; padding: 50px 15px; }
+    .empty-illustration { margin: 0 auto 13px; background: #292a3c; color: #777993; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; font-size: 23px; }
+    .empty strong { display: block; color: #d6d7e4; font-size: 13px; margin-bottom: 5px; }
+    .empty small { font-size: 12px; line-height: 1.5; display: block; }
+    .footer-note { margin: 24px 0 0; font-size: 12px; line-height: 1.6; color: #9b9db1; display: flex; align-items: center; gap: 8px; }
+    .footer-note .online-indicator { display: inline-block; height: 7px; width: 7px; border-radius: 50%; background: var(--mint); flex-shrink: 0; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 900px) { .auth-shell { grid-template-columns: 1fr; gap: 35px; max-width: 650px; } .intro-copy h1 { font-size: 46px; } .board { grid-template-columns: 1fr 1fr; } .board .column:last-child { grid-column: 1 / -1; } }
+    @media (max-width: 650px) { .wrap { width: min(100% - 28px, 550px); } .site-header { min-height: 76px; } .brand { font-size: 16px; gap: 8px; } .brand-mark { width: 37px; height: 37px; } .user-email { display: none; } .auth-shell { padding-top: 43px; } .intro-copy h1 { font-size: 39px; letter-spacing: -1.8px; } .intro-copy > p { font-size: 15px; } .features { margin-top: 22px; gap: 12px; } .auth-card { padding: 24px; } .workspace { padding-top: 30px; } .workspace-head { align-items: flex-start; flex-direction: column; } .workspace-head h1 { font-size: 39px; letter-spacing: -1.7px; } .summary-grid { gap: 8px; } .stat { padding: 14px 12px; } .stat-value { font-size: 25px; } .stat-label { font-size: 11px; } .stat-foot { font-size: 10px; } .stat-icon { display: none; } .add-panel { padding: 17px; } .add-form { grid-template-columns: 1fr; } .board { grid-template-columns: 1fr; } .board .column:last-child { grid-column: auto; } .column { min-height: 240px; } .task-list { min-height: 130px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <div class="page-glow" aria-hidden="true"></div>
+  <header class="wrap site-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="m14 17 2 2 4-5"/>
+        </svg>
+      </span>
+      Mi agenda ágil<span style="color:var(--purple)">.</span>
+    </div>
+    <div class="user-bar" id="userBar" hidden>
+      <span class="user-email" id="userEmail"></span>
+      <button type="button" class="ghost-btn" id="logoutBtn">Cerrar sesión ↗</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap auth-shell" id="authView" aria-labelledby="authTitle">
+      <div class="intro-copy">
+        <div class="section-kicker">Organiza · Avanza · Completa</div>
+        <h1 id="authTitle">Dale orden a tus ideas.<br /><span>Haz que sucedan.</span></h1>
+        <p class="text-muted">Un espacio simple para tus pendientes. Arrastra tareas, prioriza lo importante y lleva tu progreso contigo, estés donde estés.</p>
+        <div class="features">
+          <div class="feature"><span class="feature-icon" aria-hidden="true">▤</span><span><strong>Tu tablero Kanban</strong><small>Por hacer, Haciendo y Realizadas. Todo a la vista.</small></span></div>
+          <div class="feature"><span class="feature-icon" aria-hidden="true">✦</span><span><strong>Enfócate en lo esencial</strong><small>Marca cada tarea con prioridad alta, media o baja.</small></span></div>
+          <div class="feature"><span class="feature-icon" aria-hidden="true">☁</span><span><strong>Sincronizada en la nube</strong><small>Inicia sesión con tu cuenta desde otro dispositivo.</small></span></div>
+        </div>
+      </div>
+      <div class="auth-card">
+        <div class="auth-card-heading">
+          <h2>Bienvenido a tu espacio 👋</h2>
+          <p>Accede a tu tablero personal para empezar a organizar tus días.</p>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Tipo de acceso">
+          <button type="button" role="tab" id="loginTab" class="tab" aria-selected="true" aria-controls="authForm">Iniciar sesión</button>
+          <button type="button" role="tab" id="registerTab" class="tab" aria-selected="false" aria-controls="authForm">Crear cuenta</button>
+        </div>
+        <div id="authNotice" class="notice" role="status" aria-live="polite" hidden></div>
+        <form id="authForm">
+          <div class="field"><label for="authEmail">Correo electrónico</label><input id="authEmail" type="email" autocomplete="email" placeholder="tu@email.com" maxlength="254" required /></div>
+          <div class="field"><label for="authPassword">Contraseña</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres" minlength="6" required /></div>
+          <div class="field" id="confirmPasswordGroup" hidden><label for="confirmPassword">Confirmar contraseña</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" minlength="6" /></div>
+          <button type="submit" class="primary-btn full" id="authSubmit">Entrar a mi tablero →</button>
+        </form>
+        <p class="auth-note">Tu cuenta y tus tareas se protegen con Supabase Auth y reglas de acceso por usuario.</p>
+      </div>
+    </section>
+
+    <section class="wrap workspace" id="appView" hidden aria-labelledby="boardTitle">
+      <div class="workspace-head">
+        <div>
+          <div class="section-kicker">Tu espacio de productividad</div>
+          <h1 id="boardTitle">Mi tablero <span style="color:var(--purple)">✦</span></h1>
+          <p>Un paso a la vez. Convierte tus planes en resultados.</p>
+        </div>
+        <div class="workspace-actions"><button type="button" class="subtle-btn" id="refreshBtn" title="Volver a cargar tus tareas desde Supabase">↻ Actualizar</button></div>
+      </div>
+      <div id="appNotice" class="notice" role="status" aria-live="polite" hidden></div>
+      <div class="summary-grid" aria-label="Resumen de tareas">
+        <div class="stat"><div class="stat-top"><span class="stat-label">Total de tareas</span><span class="stat-icon" aria-hidden="true">▤</span></div><div id="totalStat" class="stat-value">0</div><div class="stat-foot">En tu agenda</div></div>
+        <div class="stat"><div class="stat-top"><span class="stat-label">En progreso</span><span class="stat-icon" aria-hidden="true" style="color:var(--blue);background:#89c7ff18">↻</span></div><div id="doingStat" class="stat-value">0</div><div class="stat-foot">Trabajando en ellas</div></div>
+        <div class="stat"><div class="stat-top"><span class="stat-label">Completadas</span><span class="stat-icon" aria-hidden="true" style="color:var(--mint);background:#a9f0c818">✓</span></div><div id="doneStat" class="stat-value">0</div><div class="progress-track" aria-label="Porcentaje de tareas completadas"><div id="progressFill" class="progress-fill"></div></div><div id="progressLabel" class="stat-foot">0% del total</div></div>
+      </div>
+      <div class="add-panel">
+        <div class="add-panel-head"><div><h2>+ Agregar nueva tarea</h2><p>Una idea clara es el comienzo de un gran avance.</p></div></div>
+        <form id="taskForm" class="add-form">
+          <label for="taskTitle" class="sr-only">Título de la tarea</label>
+          <input id="taskTitle" type="text" maxlength="120" minlength="2" placeholder="Ej. Terminar la presentación del proyecto" required />
+          <label for="taskPriority" class="sr-only">Prioridad</label>
+          <select id="taskPriority" aria-label="Prioridad de la tarea"><option value="media">🟡 Media</option><option value="alta">🔴 Alta</option><option value="baja">🟢 Baja</option></select>
+          <button class="primary-btn" type="submit" id="addTaskBtn">+ Añadir tarea</button>
+        </form>
+      </div>
+      <div class="board" id="kanbanBoard" aria-label="Tablero Kanban">
+        <section class="column" data-status="por_hacer" aria-labelledby="todoHeading"><div class="column-head"><div class="col-title-row"><div class="col-title" id="todoHeading"><span class="col-dot" aria-hidden="true"></span>Por hacer</div><span id="todoCount" class="count">0</span></div><div class="col-desc">Ideas listas para comenzar</div></div><div class="task-list" id="todoList"></div></section>
+        <section class="column" data-status="haciendo" aria-labelledby="doingHeading"><div class="column-head"><div class="col-title-row"><div class="col-title" id="doingHeading"><span class="col-dot" aria-hidden="true"></span>Haciendo</div><span id="doingCount" class="count">0</span></div><div class="col-desc">En marcha, sigue así</div></div><div class="task-list" id="doingList"></div></section>
+        <section class="column" data-status="realizadas" aria-labelledby="doneHeading"><div class="column-head"><div class="col-title-row"><div class="col-title" id="doneHeading"><span class="col-dot" aria-hidden="true"></span>Realizadas</div><span id="doneCount" class="count">0</span></div><div class="col-desc">Lo que ya has logrado</div></div><div class="task-list" id="doneList"></div></section>
+      </div>
+      <p class="footer-note"><span class="online-indicator" aria-hidden="true"></span>Guardado en Supabase. Arrastra las tarjetas o usa las flechas para moverlas. Pulsa «Actualizar» para cargar cambios de otro dispositivo.</p>
+    </section>
+  </main>
+
+  <script src="./config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    'use strict';
+
+    const $ = (id) => document.getElementById(id);
+    const STATUSES = ['por_hacer', 'haciendo', 'realizadas'];
+    const PRIORITIES = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+    const COLUMNS = [
+      { status: 'por_hacer', list: 'todoList', count: 'todoCount', empty: 'Aquí empieza todo', help: 'Añade una tarea para comenzar.' },
+      { status: 'haciendo', list: 'doingList', count: 'doingCount', empty: 'Todo a su tiempo', help: 'Mueve aquí las tareas en las que trabajas.' },
+      { status: 'realizadas', list: 'doneList', count: 'doneCount', empty: 'Tus logros aparecerán aquí', help: 'Finaliza tareas y celebra tus avances.' }
+    ];
+    let client = null;
+    let currentUser = null;
+    let tasks = [];
+    let authMode = 'login';
+    let requestSequence = 0;
+    let mutating = false;
+
+    function notify(where, message, type = 'info') {
+      const el = $(where);
+      el.textContent = message;
+      el.className = 'notice' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
+      el.hidden = !message;
+    }
+
+    function errorMessage(error) {
+      const code = String(error?.code || '').toLowerCase();
+      const msg = String(error?.message || 'Error desconocido.').toLowerCase();
+      if (code === 'invalid_credentials' || msg.includes('invalid login credentials')) return 'Correo o contraseña incorrectos.';
+      if (msg.includes('email not confirmed')) return 'Confirma tu correo desde el enlace que recibiste antes de ingresar.';
+      if (msg.includes('user already registered')) return 'Ya existe una cuenta con este correo. Inicia sesión.';
+      if (msg.includes('email address not authorized')) return 'Supabase no tiene autorizado este correo. Configura un SMTP propio para registrar usuarios externos.';
+      if (msg.includes('rate limit')) return 'Demasiados intentos. Inténtalo nuevamente más tarde.';
+      if (msg.includes('password should be at least')) return 'Tu contraseña debe tener al menos 6 caracteres.';
+      if (msg.includes('failed to fetch') || msg.includes('network')) return 'No se pudo conectar a Supabase. Revisa tu internet y la configuración.';
+      if (code === '42p01') return 'No existe la tabla «tareas». Ejecuta supabase_setup.sql en el SQL Editor.';
+      if (code === '42501') return 'Permiso denegado. Revisa las políticas RLS y permisos de la tabla.';
+      return error?.message || 'No se pudo completar la operación.';
+    }
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      $('loginTab').setAttribute('aria-selected', String(mode === 'login'));
+      $('registerTab').setAttribute('aria-selected', String(mode === 'register'));
+      $('confirmPasswordGroup').hidden = mode !== 'register';
+      $('confirmPassword').required = mode === 'register';
+      $('authPassword').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+      $('authSubmit').textContent = mode === 'register' ? 'Crear mi cuenta →' : 'Entrar a mi tablero →';
+      notify('authNotice', '');
+    }
+
+    function setSession(user) {
+      const prevId = currentUser?.id || null;
+      const nextId = user?.id || null;
+      currentUser = user || null;
+      $('authView').hidden = Boolean(currentUser);
+      $('appView').hidden = !currentUser;
+      $('userBar').hidden = !currentUser;
+      $('userEmail').textContent = currentUser?.email || '';
+      if (prevId !== nextId) {
+        requestSequence += 1; // invalida cualquier consulta pendiente de otra sesión
+        tasks = [];
+        renderBoard();
+        notify('appNotice', '');
+      }
+      if (!currentUser) {
+        $('authPassword').value = '';
+        $('confirmPassword').value = '';
+      }
+      return prevId !== nextId;
+    }
+
+    async function loadTasks() {
+      if (!client || !currentUser) return;
+      const id = currentUser.id;
+      const seq = ++requestSequence;
+      $('refreshBtn').disabled = true;
+      notify('appNotice', 'Cargando tus tareas desde Supabase…');
+      try {
+        const { data, error } = await client.from('tareas')
+          .select('id, usuario_id, titulo, prioridad, estado, creado_en')
+          .eq('usuario_id', id)
+          .order('creado_en', { ascending: false });
+        if (seq !== requestSequence || currentUser?.id !== id) return;
+        if (error) throw error;
+        tasks = data || [];
+        renderBoard();
+        notify('appNotice', '');
+      } catch (error) {
+        if (seq === requestSequence && currentUser?.id === id) notify('appNotice', errorMessage(error), 'error');
+      } finally {
+        if (seq === requestSequence) $('refreshBtn').disabled = false;
+      }
+    }
+
+    function el(tag, cls, content) {
+      const node = document.createElement(tag);
+      if (cls) node.className = cls;
+      if (content !== undefined) node.textContent = content;
+      return node;
+    }
+
+    function createMoveButton(task, target, label, description) {
+      const b = el('button', 'move-btn', label);
+      b.type = 'button';
+      b.setAttribute('aria-label', `${description}: ${task.titulo}`);
+      b.title = description;
+      b.addEventListener('click', () => moveTask(task.id, target));
+      return b;
+    }
+
+    function renderTask(task) {
+      const card = el('article', 'task-card');
+      card.draggable = true;
+      card.setAttribute('aria-label', `Tarea: ${task.titulo}. Prioridad ${PRIORITIES[task.prioridad] || 'media'}.`);
+      card.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData('text/plain', task.id);
+        event.dataTransfer.effectAllowed = 'move';
+        card.classList.add('is-dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('is-dragging');
+        document.querySelectorAll('.column').forEach(c => c.classList.remove('drag-over'));
+      });
+
+      const top = el('div', 'card-top');
+      const priority = STATUSES.includes(task.estado) && PRIORITIES[task.prioridad] ? task.prioridad : 'media';
+      top.append(el('span', `priority ${priority}`, PRIORITIES[priority]));
+      const del = el('button', 'delete-btn', '×');
+      del.type = 'button';
+      del.setAttribute('aria-label', `Eliminar tarea: ${task.titulo}`);
+      del.title = 'Eliminar tarea';
+      del.addEventListener('click', () => deleteTask(task.id));
+      top.append(del);
+
+      const title = el('p', 'task-title', task.titulo);
+      const footer = el('div', 'task-footer');
+      const date = new Date(task.creado_en);
+      const dateText = Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('es-BO', {day:'2-digit',month:'short'}).format(date);
+      footer.append(el('span', 'task-date', dateText));
+      const controls = el('div', 'card-controls');
+      const position = STATUSES.indexOf(task.estado);
+      if (position > 0) controls.append(createMoveButton(task, STATUSES[position-1], '←', 'Mover a la columna anterior'));
+      if (position >= 0 && position < 2) controls.append(createMoveButton(task, STATUSES[position+1], '→', 'Mover a la columna siguiente'));
+      footer.append(controls);
+      card.append(top, title, footer);
+      return card;
+    }
+
+    function renderBoard() {
+      const total = tasks.length;
+      const doing = tasks.filter(t => t.estado === 'haciendo').length;
+      const done = tasks.filter(t => t.estado === 'realizadas').length;
+      const percent = total ? Math.round(done / total * 100) : 0;
+      $('totalStat').textContent = total;
+      $('doingStat').textContent = doing;
+      $('doneStat').textContent = done;
+      $('progressFill').style.width = `${percent}%`;
+      $('progressLabel').textContent = `${percent}% del total`;
+      for (const col of COLUMNS) {
+        const filtered = tasks.filter(t => t.estado === col.status);
+        $(col.count).textContent = filtered.length;
+        const list = $(col.list);
+        list.replaceChildren();
+        if (!filtered.length) {
+          const empty = el('div', 'empty');
+          empty.append(el('div', 'empty-illustration', col.status === 'realizadas' ? '✓' : col.status === 'haciendo' ? '↻' : '+'));
+          empty.append(el('strong', '', col.empty));
+          empty.append(el('small', '', col.help));
+          list.append(empty);
+        } else {
+          filtered.forEach(t => list.append(renderTask(t)));
+        }
+      }
+    }
+
+    async function changeTask(action) {
+      if (mutating || !currentUser) return;
+      mutating = true;
+      $('addTaskBtn').disabled = true;
+      try {
+        await action();
+      } catch (error) {
+        notify('appNotice', errorMessage(error), 'error');
+      } finally {
+        mutating = false;
+        $('addTaskBtn').disabled = false;
+      }
+    }
+
+    async function moveTask(taskId, status) {
+      if (!STATUSES.includes(status)) return;
+      const task = tasks.find(t => t.id === taskId);
+      if (!task || task.estado === status) return;
+      await changeTask(async () => {
+        const { data, error } = await client.from('tareas')
+          .update({ estado: status })
+          .eq('id', task.id).eq('usuario_id', currentUser.id).select('id');
+        if (error) throw error;
+        if (!data?.length) throw new Error('No se encontró la tarea para actualizarla.');
+        await loadTasks();
+      });
+    }
+
+    async function deleteTask(taskId) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task || !window.confirm(`¿Eliminar la tarea «${task.titulo}»?`)) return;
+      await changeTask(async () => {
+        const { data, error } = await client.from('tareas')
+          .delete().eq('id', taskId).eq('usuario_id', currentUser.id).select('id');
+        if (error) throw error;
+        if (!data?.length) throw new Error('No se encontró la tarea para eliminarla.');
+        await loadTasks();
+      });
+    }
+
+    function bindEvents() {
+      $('loginTab').addEventListener('click', () => setAuthMode('login'));
+      $('registerTab').addEventListener('click', () => setAuthMode('register'));
+      $('authForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!client) return;
+        const email = $('authEmail').value.trim();
+        const password = $('authPassword').value;
+        if (authMode === 'register' && password !== $('confirmPassword').value) {
+          notify('authNotice', 'Las contraseñas no coinciden.', 'error');
+          return;
+        }
+        $('authSubmit').disabled = true;
+        notify('authNotice', 'Conectando con Supabase…');
+        try {
+          if (authMode === 'register') {
+            const { data, error } = await client.auth.signUp({
+              email, password,
+              options: { emailRedirectTo: window.location.origin + window.location.pathname }
+            });
+            if (error) throw error;
+            $('authPassword').value = '';
+            $('confirmPassword').value = '';
+            if (!data.session) {
+              setAuthMode('login');
+              notify('authNotice', 'Cuenta solicitada. Revisa tu correo (también spam) y confirma el registro antes de ingresar.', 'success');
+            } else {
+              notify('authNotice', 'Cuenta creada. Accediendo a tu tablero…', 'success');
+            }
+          } else {
+            const { error } = await client.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            notify('authNotice', '');
+          }
+        } catch (error) {
+          notify('authNotice', errorMessage(error), 'error');
+        } finally {
+          $('authSubmit').disabled = false;
+        }
+      });
+      $('logoutBtn').addEventListener('click', async () => {
+        $('logoutBtn').disabled = true;
+        try {
+          const { error } = await client.auth.signOut();
+          if (error) throw error;
+          setAuthMode('login');
+        } catch (error) {
+          notify('appNotice', errorMessage(error), 'error');
+        } finally {
+          $('logoutBtn').disabled = false;
+        }
+      });
+      $('refreshBtn').addEventListener('click', loadTasks);
+      $('taskForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const title = $('taskTitle').value.trim();
+        const priority = $('taskPriority').value;
+        if (title.length < 2 || title.length > 120) {
+          notify('appNotice', 'El título debe contener entre 2 y 120 caracteres.', 'error');
+          return;
+        }
+        if (!PRIORITIES[priority]) return;
+        await changeTask(async () => {
+          const { error } = await client.from('tareas').insert({
+            usuario_id: currentUser.id,
+            titulo: title,
+            prioridad: priority,
+            estado: 'por_hacer'
+          });
+          if (error) throw error;
+          $('taskTitle').value = '';
+          $('taskPriority').value = 'media';
+          await loadTasks();
+          $('taskTitle').focus();
+        });
+      });
+      document.querySelectorAll('.column').forEach((column) => {
+        column.addEventListener('dragover', (event) => {
+          if (!currentUser) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          column.classList.add('drag-over');
+        });
+        column.addEventListener('dragleave', (event) => {
+          if (!column.contains(event.relatedTarget)) column.classList.remove('drag-over');
+        });
+        column.addEventListener('drop', (event) => {
+          event.preventDefault();
+          column.classList.remove('drag-over');
+          moveTask(event.dataTransfer.getData('text/plain'), column.dataset.status);
+        });
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && currentUser && !mutating) loadTasks();
+      });
+    }
+
+    function boot() {
+      bindEvents();
+      renderBoard();
+      const config = window.APP_CONFIG || {};
+      const url = String(config.SUPABASE_URL || '');
+      const key = String(config.SUPABASE_PUBLISHABLE_KEY || '');
+      let validUrl = false;
+      try {
+        const parsed = new URL(url);
+        validUrl = parsed.protocol === 'https:' && Boolean(parsed.hostname);
+      } catch (_) { /* faltan datos */ }
+      if (!validUrl || url.includes('TU-PROYECTO') || !key || key.includes('REEMPLAZAR')) {
+        notify('authNotice', 'Falta configurar Supabase. Abre config.js y coloca la URL del proyecto y la clave pública (publishable key). Consulta README.md.', 'error');
+        $('authSubmit').disabled = true;
+        return;
+      }
+      if (key.startsWith('sb_secret_') || key.toLowerCase().includes('service_role')) {
+        notify('authNotice', 'Clave insegura detectada. Nunca coloques una secret key o service_role en una web pública.', 'error');
+        $('authSubmit').disabled = true;
+        return;
+      }
+      if (!window.supabase?.createClient) {
+        notify('authNotice', 'No se pudo cargar supabase-js v2 desde el CDN. Revisa tu conexión a internet.', 'error');
+        $('authSubmit').disabled = true;
+        return;
+      }
+      try {
+        client = window.supabase.createClient(url, key, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        });
+        client.auth.onAuthStateChange((event, session) => {
+          const changed = setSession(session?.user || null);
+          if (currentUser && (changed || event === 'INITIAL_SESSION')) {
+            // Evitar consultar Supabase dentro del callback de Auth: microtask separada.
+            setTimeout(() => { if (currentUser) loadTasks(); }, 0);
+          }
+        });
+        // Mensaje legible cuando vuelve de un enlace de confirmación fallido.
+        const fragment = new URLSearchParams(window.location.hash.substring(1));
+        const authError = fragment.get('error_description');
+        if (authError) notify('authNotice', decodeURIComponent(authError.replace(/\+/g, ' ')), 'error');
+      } catch (error) {
+        notify('authNotice', errorMessage(error), 'error');
+        $('authSubmit').disabled = true;
+      }
+    }
+
+    boot();
+  </script>
+</body>
+</html>
